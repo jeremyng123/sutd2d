@@ -53,8 +53,38 @@ public class SATSolver {
      */
     private static ImList<Clause> substitute(ImList<Clause> clauses,
             Literal l) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
-    }
+        /*  Attempt 1 (meimei)
+        Formula newF = new Formula();
+        for (Clause c: clauses){
+            Clause newC = new Clause();
+            if (c.contains(l)){
+                Literal negl = l.getNegation();
+                newC.add(negl);
+            }else{
+                newC.add(l);
+            }
+            newF.addClause(newC);
+        }
+        return (ImList<Clause>) newF;
+        */
 
+        //  Attempt 1 Correction:
+        //  1. Setting literal to true is not the same as negation
+        //  2. Use clause.reduce(literal) instead, returns new clause.
+
+        //  Mistake:
+        //  ImList<Clause> newC = new ImList<Clause>();
+        //  ERROR: ImList cannot be instantiated as it is abstract, use EmptyImList/NonEmptyImList instead.
+
+        ImList<Clause> newClauses = new EmptyImList<Clause>();
+        for (Clause c: clauses){
+            if (c.contains(l)) {
+                Clause newC = new Clause();
+                newC.reduce(l);
+                newClauses.add(newC);
+            } else {
+                newClauses.add(c);
+            }
+        }
+    }
 }
