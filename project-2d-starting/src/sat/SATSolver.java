@@ -86,5 +86,6 @@ public class SATSolver {
                 newClauses.add(c);
             }
         }
+        return newClauses;
     }
 }
