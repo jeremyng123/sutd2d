@@ -71,6 +71,7 @@ public class SATSolver {
         //  Attempt 1 Correction:
         //  1. Setting literal to true is not the same as negation
         //  2. Use clause.reduce(literal) instead, returns new clause.
+        //  3. Reduce will return unchanged clause if l not in clause. if (c.contains(l)) {...} is redundant.
 
         //  Mistake:
         //  ImList<Clause> newC = new ImList<Clause>();
@@ -78,12 +79,9 @@ public class SATSolver {
 
         ImList<Clause> newClauses = new EmptyImList<Clause>();
         for (Clause c: clauses){
-            if (c.contains(l)) {
-                Clause newC = new Clause();
-                newC.reduce(l);
+            Clause newC = c.reduce(l); 
+            if (newC != null) {
                 newClauses.add(newC);
-            } else {
-                newClauses.add(c);
             }
         }
         return newClauses;
