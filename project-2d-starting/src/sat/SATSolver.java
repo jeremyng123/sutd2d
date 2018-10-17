@@ -1,6 +1,8 @@
 package sat;
 
 import immutable.ImList;
+import immutable.EmptyImList;
+import immutable.NonEmptyImList;
 import sat.env.Environment;
 import sat.formula.Clause;
 import sat.formula.Formula;
@@ -20,8 +22,9 @@ public class SATSolver {
      *         null if no such environment exists.
      */
     public static Environment solve(Formula formula) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+        Environment env = new Environment();
+        NonEmptyImList clauseList = (NonEmptyImList) formula.getClauses();
+        return solve(clauseList, env);
     }
 
     /**
@@ -37,8 +40,62 @@ public class SATSolver {
      *         or null if no such environment exists.
      */
     private static Environment solve(ImList<Clause> clauses, Environment env) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+
+        //If there are no clauses, the formula is trivially satisfiable.
+        if (clauses.isEmpty()) {
+                return env;
+        }
+
+        //If there is an empty clause, the clause list is unsatisfiable.
+        for (Clause c: clauses){
+            if (c.isEmpty()){
+                return null;
+            }
+        }
+
+        //Otherwise, find the smallest clause (by number of literals).
+        Clause min = new Clause();
+        for (Clause c: clauses){
+            if (min.isEmpty()){ //min = c for first iteration
+                min = c;
+            }
+            if (min.size() < c.size()){ //min = min(min, c) subsequently
+                min = c;
+            }
+        } //smallest clause = min
+
+        // If the clause has only one literal, bind its variable in the
+        // environment so that the clause is satisfied, substitute
+        // for the variable in all the other clauses (using the suggested
+        // substitute() method), and recursively call solve()
+
+        if (min.isUnit()){
+            Literal l = min.chooseLiteral(); //choose the single literal l
+            Environment env1 = env.putTrue(l.getVariable());
+            ImList<Clause> clauses1 = substitute(clauses, l);
+            //RECURSIVELY SOLVE
+            return (solve(clauses1, env1));
+        }
+
+        //Otherwise, pick an arbitrary literal from this small clause:
+        // First try setting the literal to TRUE, substitute for it in all the
+        // clauses, then solve() recursively.
+        // If that fails, then try setting the literal to FALSE, substitute,
+        // and solve() recursively.
+
+        else {
+            Literal l = min.chooseLiteral(); //choose the literal l out of many
+            Environment envT = env.putTrue(l.getVariable()); //env now has {1:T}
+            ImList<Clause> clausesT = substitute(clauses, l);
+            //RECURSIVELY SOLVE
+            if (solve(clausesT, envT) == null) {
+                Environment envF = env.putFalse(l.getVariable()); //env{1:T} is changed to {1:F}
+                ImList<Clause> clausesF = substitute(clauses, l);
+                return solve(clausesF, envF);
+            } else{
+                return solve(clausesT, envT);
+            }
+        }
     }
 
     /**
