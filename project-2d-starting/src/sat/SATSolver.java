@@ -1,14 +1,8 @@
 package sat;
 
-import immutable.ImList;
-import immutable.EmptyImList; //
-import java.util.*; //
-import immutable.NonEmptyImList;
-import sat.env.Environment;
-import sat.env.Bool; //
-import sat.formula.Clause;
-import sat.formula.Formula;
-import sat.formula.Literal;
+import immutable.*;
+import sat.env.*;
+import sat.formula.*;
 
 /**
  * A simple DPLL SAT solver. See http://en.wikipedia.org/wiki/DPLL_algorithm
@@ -24,9 +18,10 @@ public class SATSolver {
      *         null if no such environment exists.
      */
     public static Environment solve(Formula formula) {
-        Environment env = new Environment();
-        NonEmptyImList clauseList = (NonEmptyImList) formula.getClauses();
-        return solve(clauseList, env);
+        ImList<Clause> clauses = formula.getClauses();
+        Environment ans = new Environment();
+        System.out.println(solve(clauses,ans));
+        return solve(clauses, ans);
     }
 
     /**
@@ -42,62 +37,30 @@ public class SATSolver {
      *         or null if no such environment exists.
      */
     private static Environment solve(ImList<Clause> clauses, Environment env) {
-
-        //If there are no clauses, the formula is trivially satisfiable.
-        if (clauses.isEmpty()) {
-                return env;
+        if (clauses.size() == 0) {
+        	return env;
+        } // find the smallest clause size
+        Clause smallest = clauses.first(); 
+        for(Clause i : clauses) {
+        	smallest = smallest.size() > i.size() ? smallest : i;
+        	if (i.size() == 0) {
+        		return null;
+        	}
         }
-
-        //If there is an empty clause, the clause list is unsatisfiable.
-        for (Clause c: clauses){
-            if (c.isEmpty()){
-                return null;
-            }
+        if (smallest.isUnit()) {
+        	Literal l = smallest.chooseLiteral();
+        	env = l instanceof PosLiteral ? env.putTrue(l.getVariable()) : env.putFalse(l.getVariable());
+        	
+        	return solve(substitute(clauses,l), env);
+        }else {
+        	Literal l = smallest.chooseLiteral();
+        	// set the literal to TRUE, substitute for it in all the clauses, then solve() recursively
+        	ImList<Clause> reducedLiteralsPos = substitute(clauses, l);
+        	Environment trueLiteral = solve(reducedLiteralsPos, env.putTrue(l.getVariable()));
+        	return trueLiteral != null ? trueLiteral : solve(substitute(clauses,l.getNegation()),env.putFalse(l.getVariable()));
+        	// return trueLiteral if trueLiteral is not null, else return solve(redClauseNegLit
         }
-
-        //Otherwise, find the smallest clause (by number of literals).
-        Clause min = new Clause();
-        for (Clause c: clauses){
-            if (min.isEmpty()){ //min = c for first iteration
-                min = c;
-            }
-            if (min.size() < c.size()){ //min = min(min, c) subsequently
-                min = c;
-            }
-        } //smallest clause = min
-
-        // If the clause has only one literal, bind its variable in the
-        // environment so that the clause is satisfied, substitute
-        // for the variable in all the other clauses (using the suggested
-        // substitute() method), and recursively call solve()
-
-        if (min.isUnit()){
-            Literal l = min.chooseLiteral(); //choose the single literal l
-            Environment env1 = env.putTrue(l.getVariable());
-            ImList<Clause> clauses1 = substitute(clauses, l);
-            //RECURSIVELY SOLVE
-            return (solve(clauses1, env1));
-        }
-
-        //Otherwise, pick an arbitrary literal from this small clause:
-        // First try setting the literal to TRUE, substitute for it in all the
-        // clauses, then solve() recursively.
-        // If that fails, then try setting the literal to FALSE, substitute,
-        // and solve() recursively.
-
-        else {
-            Literal l = min.chooseLiteral(); //choose the literal l out of many
-            Environment envT = env.putTrue(l.getVariable()); //env now has {1:T}
-            ImList<Clause> clausesT = substitute(clauses, l);
-            //RECURSIVELY SOLVE
-            if (solve(clausesT, envT) == null) {
-                Environment envF = env.putFalse(l.getVariable()); //env{1:T} is changed to {1:F}
-                ImList<Clause> clausesF = substitute(clauses, l);
-                return solve(clausesF, envF);
-            } else{
-                return solve(clausesT, envT);
-            }
-        }
+        
     }
 
     /**
@@ -112,56 +75,11 @@ public class SATSolver {
      */
     private static ImList<Clause> substitute(ImList<Clause> clauses,
             Literal l) {
-        /*  Attempt 1
-        Formula newF = new Formula();
-        for (Clause c: clauses){
-            Clause newC = new Clause();
-            if (c.contains(l)){
-                Literal negl = l.getNegation();
-                newC.add(negl);
-            }else{
-                newC.add(l);
-            }
-            newF.addClause(newC);
-        }
-        return (ImList<Clause>) newF;
-        */
-
-        //  Attempt 1 Correction:
-        //  1. Setting literal to true != negation
-        //  2. Use clause.reduce(literal) instead, returns new clause.
-
-        //  Mistake:
-        //  ImList<Clause> newC = new ImList<Clause>();
-        //  ERROR: ImList cannot be instantiated as it is abstract, use EmptyImList instead.
-
-        /*  Attempt 2
-        ImList<Clause> newClauses = new EmptyImList<Clause>();
-        for (Clause c: clauses){
-            if (c.contains(l)) {
-                Clause newC = c.reduce(l);
-                newClauses.add(newC);
-            } else {
-                newClauses.add(c);
-            }
-        }
-        return newClauses;
-         */
-
-        //  Attempt 2 Correction:
-        //  1. don't addClause for null case clause
-        //  2. Reduce will return unchanged clause if l not in clause.
-        //      if (c.contains(l)) {...} is redundant.
-
-        ImList<Clause> newClauses = new EmptyImList<Clause>();
-        for (Clause c: clauses){
-            Clause newC = c.reduce(l);
-            if (newC != null) {
-                newClauses.add(newC);
-            }
-        }
-        return newClauses;
-
+    	ImList<Clause> newClause = new EmptyImList<>();
+    	for (Clause i: clauses) {
+    		Clause ans = i.reduce(l);
+    		newClause = ans != null ? newClause.add(ans) : newClause;
+    	}return newClause;
     }
 
 }
