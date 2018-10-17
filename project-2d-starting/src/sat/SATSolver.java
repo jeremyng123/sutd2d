@@ -13,21 +13,21 @@ public class SATSolver {
      * unit propagation. The returned environment binds literals of class
      * bool.Variable rather than the special literals used in clausification of
      * class clausal.Literal, so that clients can more readily use it.
-     * 
+     *
      * @return an environment for which the problem evaluates to Bool.TRUE, or
      *         null if no such environment exists.
      */
     public static Environment solve(Formula formula) {
         ImList<Clause> clauses = formula.getClauses();
         Environment ans = new Environment();
-        System.out.println(solve(clauses,ans));
+
         return solve(clauses, ans);
     }
 
     /**
      * Takes a partial assignment of variables to values, and recursively
      * searches for a complete satisfying assignment.
-     * 
+     *
      * @param clauses
      *            formula in conjunctive normal form
      * @param env
@@ -40,7 +40,7 @@ public class SATSolver {
         if (clauses.size() == 0) {
         	return env;
         } // find the smallest clause size
-        Clause smallest = clauses.first(); 
+        Clause smallest = clauses.first();
         for(Clause i : clauses) {
         	smallest = smallest.size() > i.size() ? smallest : i;
         	if (i.size() == 0) {
@@ -50,7 +50,7 @@ public class SATSolver {
         if (smallest.isUnit()) {
         	Literal l = smallest.chooseLiteral();
         	env = l instanceof PosLiteral ? env.putTrue(l.getVariable()) : env.putFalse(l.getVariable());
-        	
+
         	return solve(substitute(clauses,l), env);
         }else {
         	Literal l = smallest.chooseLiteral();
@@ -60,13 +60,13 @@ public class SATSolver {
         	return trueLiteral != null ? trueLiteral : solve(substitute(clauses,l.getNegation()),env.putFalse(l.getVariable()));
         	// return trueLiteral if trueLiteral is not null, else return solve(redClauseNegLit
         }
-        
+
     }
 
     /**
      * given a clause list and literal, produce a new list resulting from
      * setting that literal to true
-     * 
+     *
      * @param clauses
      *            , a list of clauses
      * @param l
