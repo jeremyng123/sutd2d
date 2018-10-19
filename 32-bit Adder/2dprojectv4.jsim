@@ -1,0 +1,83 @@
+.include "/Users/zhouenna/Desktop/Computation Structures/50002/nominal.jsim"
+.include "/Users/zhouenna/Desktop/Computation Structures/50002/stdcell.jsim"
+.include "/Users/zhouenna/Desktop/Computation Structures/50002/checkoff2d/2dcheckoff_3ns.jsim"
+
+
+//Operation for generation of G, P or both
+.subckt genG Gi Pi Gprev G
+Xnand Pi Gprev I nand2
+Xinv Gi XG inverter
+Xnand2 XG I G nand2
+.ends
+
+.subckt genP Pi Pprev P
+Xand Pi Pprev P and2
+.ends
+
+.subckt genPG Gi Pi Gprev Pprev G P
+XgenG Gi Gprev Pi G genG
+XgenP Pi Pprev P genP
+.ends
+
+
+
+.subckt adder32 op0 A[31:0] B[31:0] S[31:0] z v n
+Xinv B[31:0] op0#32 XB[31:0] xor2
+
+Xandlevel1 A[31:0] XB[31:0] Ga[31:0] and2                                                //level 1
+Xxorlevel1 A[31:0] XB[31:0] Pa[31:0] xor2                                                //level 1
+
+XgenGb Ga0 Pa0 op0 Gin0 genG                			                        //level 2 Gin0
+XgenPGb Ga[31:1] Pa[31:1] Ga[30:0] Pa[30:0] Gb[31:1] Pb[31:1] genPG                     //level 2
+
+XgenGc Gb1 Pb1 op0 Gin1 genG              		                      	        //level 3 Gin1
+XgenGc# Gb2 Pb2 Gin0 Gin2 genG                		                 	        //level 3 Gin2
+XgenPGc Gb[31:3] Pb[31:3] Gb[29:1] Pb[29:1] Gc[31:3] Pc[31:3] genPG        	        //level 3
+
+XgenGd Gc3 Pc3 op0 Gin3 genG                     		                        //level 4 Gin3
+XgenGd# Gc[6:4] Pc[6:4] Gin[2:0] Gin[6:4] genG         		                        //level 4 Gin4-Gin6
+XgenPGd Gc[31:7] Pc[31:7] Gc[27:3] Pc[27:3] Gd[31:7] Pd[31:7] genPG                     //level 4
+
+
+XgenGe Gd7 Pd7 op0 Gin7 genG         		              	             	        //level 5 Gin7
+XgenGe# Gd[14:8] Pd[14:8] Gin[6:0] Gin[14:8] genG   		                        //level 5 Gin8-Gin14
+XgenPGe Gd[31:15] Pd[31:15] Gd[23:7] Pd[23:7] Ge[31:15] Pe[31:15] genPG        	        //level 5
+
+XgenG6 Ge15 Pe15 op0 Gin15 genG         		         	                //level 6 Gin15
+XgenG6# Ge[30:16] Pe[30:16] Gin[14:0] Gin[30:16] genG   	                        //level 6 Gin16-Gin31
+
+
+XgenS0 op0 Pa0 S0 xor2
+XgenS  Gin[30:0] Pa[31:1] S[31:1] xor2
+
+*for v
+Xinv_s S31 IS31 inverter
+Xinv_a A31 IA31 inverter
+Xinv_xb XB31 IXB31 inverter
+
+Xand0 A31 XB31 IS31 y1 and3
+Xand1 IA31 IXB31 S31 y2 and3
+Xor0 y1 y2 v or2
+
+*for n
+.connect S31 n
+
+*for z
+Xinv1 S[31:0] XS[31:0] inverter
+Xnand4 XS[7:0] XS[15:8] XS[23:16] XS[31:24] Sa[7:0] nand4
+Xnor2 Sa[3:0] Sa[7:4] Sb[3:0] nor2
+Xand4 Sb3 Sb2 Sb1 Sb0 z and4
+
+
+.ends
+
+/*
+.include "/Users/zhouenna/Desktop/Computation Structures/50002/8clocks.jsim" 
+
+Xtest vdd 0#32 0#32 S[31:0] XS[31:0] Sa[7:0] z v n adder32
+.tran 200ns 
+.plot XS[31:0]
+.plot Sa[7:0]
+.plot z
+*/
+

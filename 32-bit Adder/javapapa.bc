@@ -1,0 +1,17 @@
+BC1.1
+p0 := a0 ^ b0;
+g0 := a0 & b0 ;
+gin := g0 | (p0 & cin);
+p1 := a1 ^ b1;
+sa := p1 ^ gin;
+
+x0 := a0 ^ b0;
+and1 := a0 & b0;
+and2 := x0 & cin;
+cin1 := and1 | and2;
+x1 := a1 ^ b1;
+sb := cin1 ^ x1;
+
+r := sa ^ sb;
+
+ASSIGN r;
